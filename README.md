@@ -98,32 +98,22 @@ for result in results:
 from pyspark.sql import SparkSession, Row
 from pyspark.sql import functions
 
-def loadMovieNames():
-    movieNames = {}
-    with open("u.item", encoding="ISO-8859-1") as f:
-        for line in f:
-            fields = line.split('|')
-            movieNames[int(fields[0])] = fields[1]
-    return movieNames
+def extractValue(line):
+  fields = line.split(',')
+  return (int(fields[0],int(fields[2])))
 
-spark = SparkSession.builder.config("spark.sql.warehouse.dir", "file:///C:/temp").appName("PopularMovies").getOrCreate()
+def extractValue(line):
+  fields = line.split(',')
+  # Convert fields[2] to float first, then to int if necessary
+  return (int(fields[0]), int(float(fields[2])))
 
-movieNames = loadMovieNames()
+lines = sc.textFile("customer-orders.csv")
+mappedInput = lines.map(extractValue)
+totalTimeSpend = mappedInput.reduceByKey(lambda x, y :x + y)
+results = totalTimeSpend.collect()
+for result in results :
+  print(result)
 
-lines = spark.sparkContext.textFile("u.data")
-movies = lines.map(lambda x: Row(movieID=int(x.split()[1])))
-movieDataset = spark.createDataFrame(movies)
-
-topMovieIDs = movieDataset.groupBy("movieID").count().orderBy("count", ascending=False).cache()
-
-topMovieIDs.show()
-
-topMovieIDs.show()
-top10 = topMovieIDs.take(10)
-print("\n")
-for result in top10:
-    print("%s:%d" % (movieNames[result[0]], result[1]))
-spark.stop()
 
 
 **##Aim:Create Similar Movies from One Million Rating##**
